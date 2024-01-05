@@ -145,21 +145,52 @@ features to warn if the return value is untested.
 
 ### I.11: Never transfer ownership by a raw pointer (T*)
 
+When an object is passed as a raw pointer as an argument
+to a function, the caller manages the lifetime of the object.
+
+##### Example, bad
+
+    void func(X *x)
+    {
+        free (x); // Don't do this. Caller owns.
+    }
+    
 Every object passed as a raw pointer is assumed to be owned
 by the caller, so that its lifetime is handled by the caller.
 
-This is hard to stick to in C. For small structs, you can
-return the whole struct, but, constructor functions that
-allocate and populate structures are common in C.
+Also, when a function returns a pointer as a return value,
+presume that the function returning the value is still
+managing the lifetime of the object.
 
-One could create an OWNER(x) macro to decorate the
-return value type, perhaps.
+##### Example, bad
+
+    X *func(void);
+
+    X *x = func();
+    free(x);  // Don't do this
+
+For constructor-type functions it is better to return by
+value if the structures are small.
+
+##### Example, good
+
+    typedef struct _S {
+        int a;
+        int b;
+    } S;
+
+    S constructor(int a, int b) {
+        S s;
+        s.a = a;
+        s.b = g;
+        return s;
+    }
+
+If you must transfer ownership of a large structure,
+documnent if the the return value is transferring full ownership.
+_Hmmm, could making an `OWNER` macro work?_
 
     OWNER(X*) compute(int n);
-
-Let's say
-- Prefer to return structs by value, if they are not too large
-- Otherwise, use the OWNER(x) macro
 
 ### I.12: Declare a pointer that must not be null as `NOT_NULL`
 
